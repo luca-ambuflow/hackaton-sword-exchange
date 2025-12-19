@@ -1,15 +1,22 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Link } from '@/i18n/navigation'
+import { Box, Title, TextInput, Button, Text, SimpleGrid, Card, Group } from '@mantine/core'
+import { getTranslations } from 'next-intl/server'
 
 function toQuery(searchParams: { [key: string]: string | string[] | undefined }) {
   const entries = Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
   return Object.fromEntries(entries)
 }
 
-export default async function SocietiesPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const { search = '' } = toQuery(searchParams)
+export default async function SocietiesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedSearchParams = await searchParams
+  const { search = '' } = toQuery(resolvedSearchParams)
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
+  const t = await getTranslations('societies')
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   let query = supabase
     .from('societies')
     .select('id, name, slug, city, province, description')
@@ -22,38 +29,49 @@ export default async function SocietiesPage({ searchParams }: { searchParams: { 
   const { data: societies, error } = await query
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Societies</h1>
+    <Box maw={1000} mx="auto">
+      <Title order={1} mb="lg">{t('title')}</Title>
 
-      <form className="mb-6">
-        <input
-          type="text"
+      <form>
+        <TextInput
           name="search"
           defaultValue={search}
-          placeholder="Search by name"
-          className="w-full rounded border px-3 py-2"
+          placeholder={t('searchPlaceholder')}
+          mb="lg"
         />
       </form>
 
+      {user && (
+        <Box mb="lg">
+          <Link href="/societies/new" style={{ textDecoration: 'none' }}>
+            <Button color="dark" size="sm">
+              {t('createSociety')}
+            </Button>
+          </Link>
+        </Box>
+      )}
+
       {error && (
-        <p className="text-sm text-red-600">{error.message}</p>
+        <Text size="sm" c="red">{error.message}</Text>
       )}
 
       {!error && (!societies || societies.length === 0) && (
-        <p className="text-sm text-gray-600">No societies found.</p>
+        <Text size="sm" c="dimmed">{t('noSocietiesFound')}</Text>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
         {societies?.map((s) => (
-          <Link key={s.slug} href={`/societies/${s.slug}`} className="rounded border p-4 hover:shadow">
-            <h3 className="text-lg font-medium">{(s as any).name ?? (s as any).ragione_sociale}</h3>
-            <p className="text-sm text-gray-600">{s.city}{s.province ? `, ${s.province}` : ''}</p>
-            {s.description && (
-              <p className="mt-2 line-clamp-3 text-sm text-gray-700">{s.description}</p>
-            )}
+          <Link key={s.slug} href={`/societies/${s.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Card shadow="sm" padding="lg" withBorder>
+              <Text size="lg" fw={500}>{(s as any).name ?? (s as any).ragione_sociale}</Text>
+              <Text size="sm" c="dimmed">{s.city}{s.province ? `, ${s.province}` : ''}</Text>
+              {s.description && (
+                <Text size="sm" mt="sm" lineClamp={3}>{s.description}</Text>
+              )}
+            </Card>
           </Link>
         ))}
-      </div>
-    </div>
+      </SimpleGrid>
+    </Box>
   )
 }

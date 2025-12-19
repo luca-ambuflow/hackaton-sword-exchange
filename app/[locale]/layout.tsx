@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation'
 import { Inter } from 'next/font/google'
 import { locales, type Locale } from '@/i18n/navigation'
 import NavBar from '@/components/NavBar'
+import { MantineProvider, ColorSchemeScript, Container } from '@mantine/core'
+import { theme } from '@/lib/theme'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,10 +25,13 @@ export default async function LocaleLayout({
   params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  // Await params in Next.js 15
+  const { locale } = await params
+
   // Validate locale
-  if (!locales.includes(params.locale as Locale)) {
+  if (!locales.includes(locale as Locale)) {
     notFound()
   }
 
@@ -34,12 +39,17 @@ export default async function LocaleLayout({
   const messages = await getMessages()
 
   return (
-    <html lang={params.locale}>
+    <html lang={locale}>
+      <head>
+        <ColorSchemeScript defaultColorScheme="dark" />
+      </head>
       <body className={inter.className}>
-        <NextIntlClientProvider locale={params.locale} messages={messages}>
-          <NavBar />
-          <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-        </NextIntlClientProvider>
+        <MantineProvider theme={theme} defaultColorScheme="dark">
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <NavBar />
+            <Container component="main" size="lg" py="xl">{children}</Container>
+          </NextIntlClientProvider>
+        </MantineProvider>
       </body>
     </html>
   )

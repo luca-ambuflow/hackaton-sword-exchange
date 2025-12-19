@@ -3,9 +3,15 @@
 import { Link } from '@/i18n/navigation'
 import { useEffect, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import { Group, Container, Button, Text, Box } from '@mantine/core'
+import { signOutAction } from '@/app/[locale]/(public)/auth/actions'
+import { useTranslations } from 'next-intl'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function NavBar() {
+  const t = useTranslations('nav')
   const [fullName, setFullName] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
@@ -15,6 +21,7 @@ export default function NavBar() {
       const user = userRes.user
       if (!user) {
         setFullName(null)
+        setIsAdmin(false)
         return
       }
 
@@ -28,6 +35,16 @@ export default function NavBar() {
       const nameFromProfile = profile?.full_name as string | undefined
       const nameFromMeta = (user.user_metadata?.full_name as string | undefined) || (user.user_metadata?.name as string | undefined)
       setFullName(nameFromProfile || nameFromMeta || user.email || 'Account')
+
+      // Check if user is platform admin
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'platform_admin')
+        .maybeSingle()
+
+      setIsAdmin(!!adminRole)
     }
 
     loadUser()
@@ -36,6 +53,7 @@ export default function NavBar() {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
         setFullName(null)
+        setIsAdmin(false)
         return
       }
       // Re-load profile when auth state changes
@@ -48,25 +66,46 @@ export default function NavBar() {
   }, [])
 
   return (
-    <nav className="w-full border-b bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between">
-        <div className="text-lg font-semibold">
-          <Link href="/" className="hover:opacity-80">Swords</Link>
-        </div>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-6">
-          <Link href="/societies" className="text-sm hover:underline">Societies</Link>
-          <Link href="/events" className="text-sm hover:underline">Events</Link>
-          {fullName ? (
-            <span className="truncate rounded bg-gray-100 px-3 py-1 text-sm text-gray-800" title={fullName}>
-              {fullName}
-            </span>
-          ) : (
-            <Link href="/auth/sign-in" className="rounded bg-black px-3 py-1 text-sm text-white hover:opacity-90">
-              Log in
-            </Link>
-          )}
-        </div>
-      </div>
-    </nav>
+    <Box component="nav" style={{ borderBottom: '1px solid var(--mantine-color-default-border)', backgroundColor: 'var(--mantine-color-body)', backdropFilter: 'blur(10px)' }}>
+      <Container size="lg" py="md">
+        <Group justify="space-between" wrap="wrap">
+          <Text size="lg" fw={600} component={Link} href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            {t('swords')}
+          </Text>
+          <Group gap="md" wrap="wrap">
+            <Text size="sm" component={Link} href="/societies" style={{ textDecoration: 'none', color: 'inherit' }}>
+              {t('societies')}
+            </Text>
+            <Text size="sm" component={Link} href="/events" style={{ textDecoration: 'none', color: 'inherit' }}>
+              {t('events')}
+            </Text>
+            {isAdmin && (
+              <Text size="sm" component={Link} href="/admin" style={{ textDecoration: 'none', color: 'inherit' }}>
+                {t('admin')}
+              </Text>
+            )}
+            {fullName ? (
+              <Group gap="xs">
+                <Button variant="light" size="compact-sm" component={Link} href="/account" title={fullName}>
+                  {fullName}
+                </Button>
+                <Button
+                  variant="subtle"
+                  size="compact-sm"
+                  onClick={signOutAction}
+                >
+                  {t('logOut')}
+                </Button>
+              </Group>
+            ) : (
+              <Button variant="filled" color="dark" size="compact-sm" component={Link} href="/auth/sign-in">
+                {t('logIn')}
+              </Button>
+            )}
+            <LanguageSwitcher />
+          </Group>
+        </Group>
+      </Container>
+    </Box>
   )
 }

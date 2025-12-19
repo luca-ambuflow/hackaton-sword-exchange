@@ -1,15 +1,16 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 
-type Props = { params: { slug: string } }
+type Props = { params: Promise<{ slug: string }> }
 
 export default async function SocietyDetailPage({ params }: Props) {
-  const supabase = createSupabaseServerClient()
+  const { slug } = await params
+  const supabase = await createSupabaseServerClient()
 
   const { data: society, error } = await supabase
     .from('societies')
     .select('id, name, slug, city, province, description')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .maybeSingle()
 
   if (error) {

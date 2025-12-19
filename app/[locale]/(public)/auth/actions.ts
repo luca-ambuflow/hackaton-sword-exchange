@@ -22,7 +22,7 @@ export async function signInAction(formData: FormData) {
     throw new Error('Invalid credentials format')
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
 
   if (error) {
@@ -44,7 +44,7 @@ export async function signUpAction(formData: FormData) {
     throw new Error('Invalid credentials format')
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -58,4 +58,17 @@ export async function signUpAction(formData: FormData) {
   // Redirect to sign-in page
   const locale = await getLocale()
   redirect({ href: '/auth/sign-in', locale })
+}
+
+export async function signOutAction() {
+  const supabase = await createSupabaseServerClient()
+  const { error } = await supabase.auth.signOut()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  // Redirect to home page after logout
+  const locale = await getLocale()
+  redirect({ href: '/', locale })
 }

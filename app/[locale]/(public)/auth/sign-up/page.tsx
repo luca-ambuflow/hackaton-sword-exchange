@@ -1,42 +1,39 @@
 import { signUpAction } from '../actions'
 import { Link } from '@/i18n/navigation'
+import { Box, Title, Stack, TextInput, PasswordInput, Button, Text, Anchor } from '@mantine/core'
+import { useTranslations } from 'next-intl'
 
 export default function SignUpPage() {
+  const t = useTranslations('auth')
   return (
-    <div className="mx-auto max-w-md p-6">
-      <h1 className="mb-6 text-2xl font-semibold">Create account</h1>
-      <form action={signUpAction} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium">Email</label>
-          <input
+    <Box maw={400} mx="auto">
+      <Title order={1} mb="xl">{t('createAccount')}</Title>
+      <form action={signUpAction}>
+        <Stack gap="md">
+          <TextInput
             id="email"
             name="email"
+            label={t('email')}
             type="email"
             required
-            className="mt-1 w-full rounded border px-3 py-2"
           />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium">Password</label>
-          <input
+          
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
+            label={t('password')}
             minLength={6}
             required
-            className="mt-1 w-full rounded border px-3 py-2"
           />
-        </div>
-        <button
-          type="submit"
-          className="w-full rounded bg-black px-4 py-2 text-white hover:opacity-90"
-        >
-          Sign up
-        </button>
+          
+          <Button type="submit" color="dark" fullWidth>
+            {t('signUp')}
+          </Button>
+        </Stack>
       </form>
-      <p className="mt-4 text-sm">
-        Already have an account? <Link href="/auth/sign-in" className="underline">Sign in</Link>
-      </p>
-    </div>
+      <Text size="sm" mt="md">
+        {t('hasAccount')} <Anchor component={Link} href="/auth/sign-in">{t('signIn')}</Anchor>
+      </Text>
+    </Box>
   )
 }
