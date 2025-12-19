@@ -1,3 +1,5 @@
+"use client"
+
 import { signUpAction } from '../actions'
 import { Link } from '@/i18n/navigation'
 import { Box, Title, Stack, TextInput, PasswordInput, Button, Text, Anchor } from '@mantine/core'
